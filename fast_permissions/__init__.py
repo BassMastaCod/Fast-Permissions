@@ -41,7 +41,8 @@ auth = Auth()
 def default_session_endpoints(router: APIRouter, controller: Controller):
     @router.post('', status_code=status.HTTP_204_NO_CONTENT)
     @auth.public
-    async def login(response: Response,
+    async def login(request: Request,
+                    response: Response,
                     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
                     daos: DAOFactory = controller.daos) -> None:
         """Authenticates the user and sets a cookie with the access token."""
@@ -51,7 +52,7 @@ def default_session_endpoints(router: APIRouter, controller: Controller):
                 key='access_token',
                 value=user.access_token,
                 httponly=True,
-                secure=True,
+                secure=request.url.scheme == 'https',
                 samesite='lax',
                 max_age=60 * 60 * 24,
                 path='/'
