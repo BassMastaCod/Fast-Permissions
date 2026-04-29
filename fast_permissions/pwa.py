@@ -4,7 +4,6 @@ from urllib.parse import quote
 
 from daomodel.db import init_db, create_engine
 from fastapi import Request, Depends, HTTPException, status
-from fastapi.responses import HTMLResponse
 
 from fast_permissions import RestrictedController
 from fast_permissions.html import login_template
@@ -72,8 +71,9 @@ class PWAWithAuth(PWA):
             redirect: bool = True) -> None:
         """Creates a basic login page.
 
-        This page is extremely rudimentary and is only intended for developer use.
-        UX is lacking; it does not redirect after login or even provide feedback to the user.
+        This page provides basic login functionality with redirect support.
+        After successful login, it will redirect to the page specified in the 'from' URL parameter,
+        or to '../' (parent directory) by default.
 
         :param page_path: Where to host the login page (/login by default)
         :param api_path: Where to send the login form (/api/sessions by default)
@@ -114,23 +114,11 @@ class PWAWithAuth(PWA):
                         unauthorized_redirect: Optional[str] = None,
                         **get_kwargs):
         """Decorator that creates a page requiring authentication."""
-        route = self.with_prefix(route)
         url = unauthorized_redirect or self.unauthorized_redirect
         get_user = self.get_current_user_with_redirect(url) if url else self.get_current_user
 
         def decorator(func):
-            async def response_wrapper(request: Request, context: dict = Depends(func), user: User = Depends(get_user)):
-                return HTMLResponse(self.page_template.render(
-                    path_prefix=self.prefix,
-                    request=request,
-                    title=context.get('title', self.title),
-                    color=color,
-                    css=ensure_list(css) + self.global_css,
-                    js=ensure_list(js) + self.global_js,
-                    js_libraries=ensure_list(js_libraries),
-                    body=self.env.get_template(html).render(**context)
-                ))
-            self.get(route, include_in_schema=False, **get_kwargs)(response_wrapper)
-            logger.info(f'Registered restricted page at {route}')
+            logger.info(f'Registering restricted page...')
+            self._register_page(route, html, css, js, js_libraries, color, Depends(get_user), func=func, **get_kwargs)
             return func
         return decorator
