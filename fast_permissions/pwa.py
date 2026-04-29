@@ -72,8 +72,9 @@ class PWAWithAuth(PWA):
             redirect: bool = True) -> None:
         """Creates a basic login page.
 
-        This page is extremely rudimentary and is only intended for developer use.
-        UX is lacking; it does not redirect after login or even provide feedback to the user.
+        This page provides basic login functionality with redirect support.
+        After successful login, it will redirect to the page specified in the 'from' URL parameter,
+        or to '../' (parent directory) by default.
 
         :param page_path: Where to host the login page (/login by default)
         :param api_path: Where to send the login form (/api/sessions by default)
