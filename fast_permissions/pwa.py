@@ -2,10 +2,10 @@ from pathlib import Path
 from typing import Optional, Callable
 from urllib.parse import quote
 
-from daomodel.db import init_db, create_engine
+from daomodel.db import DataLayer
 from fastapi import Request, Depends, HTTPException, status
 
-from fast_permissions import RestrictedController
+from fast_permissions import RestrictedController, config
 from fast_permissions.html import login_template
 from fast_permissions.models import User
 from fast_permissions.service import Unauthorized, UserService
@@ -51,14 +51,14 @@ class PWAWithAuth(PWA):
             get_current_user=self.get_current_user,
             public_by_default=self.public_by_default
         )
-        controller.engine = create_engine('database.db')
-        init_db(controller.engine)
+        controller.data_layer = DataLayer(config.DB)
+        controller.data_layer.init_db()
         return controller
 
     def _default_get_current_user(self, request: Request) -> User:
         """Returns the currently logged-in user, or raises Unauthorized if not logged in."""
         token = request.cookies.get('access_token')
-        with self.controller.dao_context() as daos:
+        with self.controller.data_layer.dao_context() as daos:
             return UserService(daos).from_token(token)
 
     @property

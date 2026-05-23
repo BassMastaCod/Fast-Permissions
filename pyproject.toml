@@ -10,7 +10,7 @@ description = "Add robust authentication to your FastAPI endpoints"
 keywords = ["authentication", "authorization", "fastapi", "permissions", "security", "access"]
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = ["fastapi", "daomodel", "pyjwt", "python-multipart", "jinja2", "bcrypt"]
+dependencies = ["fastapi", "daomodel", "fast-controller", "pyjwt", "python-multipart", "jinja2", "bcrypt"]
 license = {text = "MIT"}
 classifiers = [
     "License :: OSI Approved :: MIT License",

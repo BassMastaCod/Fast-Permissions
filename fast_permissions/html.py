@@ -22,6 +22,10 @@ login_template = '''
         <form id="login-form">
             <input type="text" id="username" name="username" placeholder="Username" required>
             <input type="password" id="password" name="password" placeholder="Password" required>
+            <div style="text-align: left; margin-bottom: 15px;">
+                <input type="checkbox" id="remember-me" name="remember-me">
+                <label for="remember-me">Remember me</label>
+            </div>
             <button type="submit">Login</button>
         </form>
     </div>
@@ -38,9 +42,6 @@ login_template = '''
             loginForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
 
-                const username = document.getElementById('username').value;
-                const password = document.getElementById('password').value;
-
                 try {
                     errorMessage.style.display = 'none';
 
@@ -50,9 +51,9 @@ login_template = '''
                             'Content-Type': 'application/x-www-form-urlencoded',
                         },
                         body: new URLSearchParams({
-                            'grant_type': 'password',
-                            'username': username,
-                            'password': password,
+                            'username': document.getElementById('username').value,
+                            'password': document.getElementById('password').value,
+                            'remember': document.getElementById('remember-me').checked,
                         }),
                         credentials: 'include'
                     });
@@ -67,7 +68,6 @@ login_template = '''
 
                     // Successful login - redirect to the appropriate page
                     window.location.href = redirectTo;
-
                 } catch (error) {
                     errorMessage.textContent = error.message;
                     errorMessage.style.display = 'block';

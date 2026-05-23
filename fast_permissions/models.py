@@ -1,7 +1,7 @@
 from typing import Optional, Any
 
 import bcrypt
-from daomodel.fields import Identifier, Unsearchable
+from daomodel.fields import Identifier, Unsearchable, no_case_str
 from fast_controller import Resource
 from fast_controller.schema import schemas
 
@@ -9,7 +9,7 @@ from fast_permissions.exceptions import InvalidPassword
 
 
 class UserBase(Resource):
-    username: Identifier[str]
+    username: Identifier[no_case_str]
 
 
 @schemas(output=UserBase)
@@ -48,4 +48,3 @@ class OwnedResource(OrphanableResource):
 
 class Session(OwnedResource, table=True):
     access_token: Identifier[str]
-    token_type: str = 'bearer'  # is this valid or needed/weanted?
