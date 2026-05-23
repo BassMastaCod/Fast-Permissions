@@ -152,5 +152,5 @@ class RestrictedController(Controller):
         """
         admin = User(username='admin')
         admin.password = password
-        with self.dao_context() as daos:
+        with self.data_layer.dao_context() as daos:
             daos[User].upsert(admin)
