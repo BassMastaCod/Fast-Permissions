@@ -5,7 +5,7 @@ from urllib.parse import quote
 from daomodel.db import DataLayer
 from fastapi import Request, Depends, HTTPException, status
 
-from fast_permissions import RestrictedController
+from fast_permissions import RestrictedController, config
 from fast_permissions.html import login_template
 from fast_permissions.models import User
 from fast_permissions.service import Unauthorized, UserService
@@ -51,7 +51,7 @@ class PWAWithAuth(PWA):
             get_current_user=self.get_current_user,
             public_by_default=self.public_by_default
         )
-        controller.data_layer = DataLayer('database.db')
+        controller.data_layer = DataLayer(config.DB)
         controller.data_layer.init_db()
         return controller
 
