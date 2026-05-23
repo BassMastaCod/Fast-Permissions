@@ -8,6 +8,7 @@ from fastapi import Depends, APIRouter, Response, Request, status, FastAPI, Secu
 from fastapi.security import OAuth2PasswordRequestForm, APIKeyCookie
 
 from fast_permissions import config
+from fast_permissions.config import TOKEN_REMEMBER_ME_DAYS
 from fast_permissions.exceptions import Unauthorized
 from fast_permissions.models import Session, User
 from fast_permissions.service import UserService
@@ -54,7 +55,7 @@ def default_session_endpoints(router: APIRouter, controller: Controller):
                 httponly=True,
                 secure=request.url.scheme == 'https',
                 samesite='lax',
-                max_age=60 * 60 * 24,
+                max_age=60 * 60 * 24 * TOKEN_REMEMBER_ME_DAYS,
                 path='/'
             )
         except TypeError:

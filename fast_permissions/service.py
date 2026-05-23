@@ -54,18 +54,23 @@ class UserService:
         self.set_password(user, password)
         return user
 
-    def authenticate(self, username: str, password: str) -> User:
+    def authenticate(self, username: str, password: str, remember: bool = False) -> User:
         """Authenticates a User and returns a token if successful.
 
         :param username: The username to authenticate
         :param password: The unencrypted password for the username
+        :param remember: True to set a long-lived token
         :return: The authenticated User, containing the access token
         :raises HTTPException: If the username or password is incorrect
         """
         try:
             user = self.get_user(username)
             user.verify(password)
-            user.access_token = create_access_token(user.model_dump(), expires_delta=timedelta(days=1))
+            if remember:
+                expires_delta = timedelta(days=config.TOKEN_REMEMBER_ME_DAYS)
+            else:
+                expires_delta = timedelta(minutes=config.TOKEN_EXPIRE_MINUTES)
+            user.access_token = create_access_token(user.model_dump(), expires_delta=expires_delta)
             self.token_dao.create_with(access_token=user.access_token, owner=user.username)
             return user
         except (NotFound, InvalidPassword) as e:
