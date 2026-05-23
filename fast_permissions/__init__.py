@@ -1,14 +1,13 @@
-from typing import Annotated, Callable
+from typing import Callable
 
 from daomodel.db import DAOFactory
 
 from fast_controller import Controller, Action
 from fast_controller.util import no_cache
-from fastapi import Depends, APIRouter, Response, Request, status, FastAPI, Security, HTTPException
-from fastapi.security import OAuth2PasswordRequestForm, APIKeyCookie
+from fastapi import Depends, APIRouter, Response, Request, status, FastAPI, Security, HTTPException, Form
+from fastapi.security import APIKeyCookie
 
 from fast_permissions import config
-from fast_permissions.config import TOKEN_REMEMBER_ME_DAYS
 from fast_permissions.exceptions import Unauthorized
 from fast_permissions.models import Session, User
 from fast_permissions.service import UserService
@@ -44,18 +43,20 @@ def default_session_endpoints(router: APIRouter, controller: Controller):
     @auth.public
     async def login(request: Request,
                     response: Response,
-                    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+                    username: str = Form(),
+                    password: str = Form(),
+                    remember_me: bool = Form(default=False),
                     daos: DAOFactory = controller.daos) -> None:
         """Authenticates the user and sets a cookie with the access token."""
         try:
-            user = UserService(daos).authenticate(form_data.username, form_data.password)
+            user = UserService(daos).authenticate(username, password, remember_me)
             response.set_cookie(
                 key='access_token',
                 value=user.access_token,
                 httponly=True,
                 secure=request.url.scheme == 'https',
                 samesite='lax',
-                max_age=60 * 60 * 24 * TOKEN_REMEMBER_ME_DAYS,
+                max_age=60 * 60 * 24 * config.TOKEN_REMEMBER_ME_DAYS,
                 path='/'
             )
         except TypeError:
