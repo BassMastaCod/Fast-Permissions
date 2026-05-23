@@ -48,4 +48,3 @@ class OwnedResource(OrphanableResource):
 
 class Session(OwnedResource, table=True):
     access_token: Identifier[str]
-    token_type: str = 'bearer'  # is this valid or needed/weanted?
