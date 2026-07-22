@@ -51,7 +51,7 @@ class PWAWithAuth(PWA):
             get_current_user=self.get_current_user,
             public_by_default=self.public_by_default
         )
-        controller.data_layer = DataLayer(config.DB)
+        controller.data_layer = DataLayer(engine=config.DB, sqlite_path=config.DB_PATH)
         controller.data_layer.init_db()
         return controller
 
