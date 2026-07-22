@@ -1,4 +1,5 @@
-from typing import Callable
+import os
+from typing import Callable, Optional
 
 from daomodel.db import DAOFactory
 
@@ -144,7 +145,7 @@ class RestrictedController(Controller):
         async def unauthorized_handler(request: Request, exc: Unauthorized):
             return Response(status_code=status.HTTP_401_UNAUTHORIZED)
 
-    def register_admin(self, password: str) -> None:
+    def register_admin(self, password: Optional[str] = os.environ.get('DEFAULT_ADMIN_PASS')) -> None:
         """Creates an admin user having the given password.
 
         This only needs to be called once.
@@ -152,7 +153,7 @@ class RestrictedController(Controller):
 
         :param password: The password for the admin user (this will be hashed and stored in the database).
         """
-        admin = User(username='admin')
-        admin.password = password
         with self.data_layer.dao_context() as daos:
-            daos[User].upsert(admin)
+            admin = daos[User].create('admin', insert=False)
+            admin.password = password
+            daos.insert(admin)
