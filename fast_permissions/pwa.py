@@ -65,6 +65,9 @@ class PWAWithAuth(PWA):
     def restricted_dep(self):
         return Depends(self.get_current_user_with_redirect(no_return=True))
 
+    def register_restricted_pwa(self, **kwargs):
+        self.register_pwa(dep=self.restricted_dep, **kwargs)
+
     def register_simple_login_page(self,
             page_path: str = 'login',
             api_path: str = '/api/sessions',
