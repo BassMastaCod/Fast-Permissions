@@ -84,14 +84,15 @@ class PWAWithAuth(PWA):
             return {'title': f'{self.title} Login'}
 
         if redirect:
-            self.unauthorized_redirect = '/login'
+            self.unauthorized_redirect = f'/login?redirect={self.prefix}'
 
     def get_current_user_with_redirect(self, url: Optional[str] = None, no_return: bool = False):
         """Returns a dependency that validates the user and redirects back to the original page once logged in."""
         if not url:
             if not self.unauthorized_redirect:
                 raise ValueError('Unauthorized redirect URL not specified. '
-                                 'Please set unauthorized_redirect= when creating PWA or page.')
+                                 'Please set unauthorized_redirect= when creating PWA or page. '
+                                 'Alternatively, calling register_simple_login_page() will create/assign a redirect page.')
             url = self.unauthorized_redirect
         async def wrapper(request: Request):
             try:
