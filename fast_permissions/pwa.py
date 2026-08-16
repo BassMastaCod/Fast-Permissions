@@ -51,7 +51,7 @@ class PWAWithAuth(PWA):
             get_current_user=self.get_current_user,
             public_by_default=self.public_by_default
         )
-        controller.data_layer = DataLayer(config.DB)
+        controller.data_layer = DataLayer(engine=config.DB, sqlite_path=config.DB_PATH)
         controller.data_layer.init_db()
         return controller
 
@@ -64,6 +64,9 @@ class PWAWithAuth(PWA):
     @property
     def restricted_dep(self):
         return Depends(self.get_current_user_with_redirect(no_return=True))
+
+    def register_restricted_pwa(self, **kwargs):
+        self.register_pwa(dep=self.restricted_dep, **kwargs)
 
     def register_simple_login_page(self,
             page_path: str = 'login',
@@ -84,14 +87,15 @@ class PWAWithAuth(PWA):
             return {'title': f'{self.title} Login'}
 
         if redirect:
-            self.unauthorized_redirect = '/login'
+            self.unauthorized_redirect = f'/login?redirect={self.prefix}'
 
     def get_current_user_with_redirect(self, url: Optional[str] = None, no_return: bool = False):
         """Returns a dependency that validates the user and redirects back to the original page once logged in."""
         if not url:
             if not self.unauthorized_redirect:
                 raise ValueError('Unauthorized redirect URL not specified. '
-                                 'Please set unauthorized_redirect= when creating PWA or page.')
+                                 'Please set unauthorized_redirect= when creating PWA or page. '
+                                 'Alternatively, calling register_simple_login_page() will create/assign a redirect page.')
             url = self.unauthorized_redirect
         async def wrapper(request: Request):
             try:

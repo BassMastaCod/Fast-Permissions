@@ -1,39 +1,10 @@
-from datetime import timedelta, datetime, timezone
-from typing import Optional, Any
+import uuid
 
-import jwt
 from daomodel.dao import NotFound
 from daomodel.db import DAOFactory
-from fastapi import HTTPException
 
-from fast_permissions import config
 from fast_permissions.exceptions import InvalidPassword, Unauthorized
 from fast_permissions.models import User, Session, OwnedResource
-
-
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """Creates a JWT access token.
-
-    :param data: The payload to include in the token
-    :param expires_delta: The duration for which the token is valid
-    :return: The encoded access token
-    """
-    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=15))
-    to_encode = {**data, 'exp': expire}
-    return jwt.encode(to_encode, config.SECRET_KEY, algorithm=config.ALGORITHM)
-
-
-def decode_token(token: str) -> dict[str, Any]:
-    """Decodes a JWT token and returns the payload."""
-    try:
-        payload = jwt.decode(token, config.SECRET_KEY, algorithms=[config.ALGORITHM])
-        if not payload.get('username'):
-            raise HTTPException(status_code=401, detail='Invalid token')
-        return payload
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail='Token expired')
-    except Exception:
-        raise HTTPException(status_code=401, detail='Invalid token')
 
 
 class UserService:
@@ -54,25 +25,19 @@ class UserService:
         self.set_password(user, password)
         return user
 
-    def authenticate(self, username: str, password: str, remember: bool = False) -> User:
+    def authenticate(self, username: str, password: str) -> tuple[User, str]:
         """Authenticates a User and returns a token if successful.
 
         :param username: The username to authenticate
         :param password: The unencrypted password for the username
-        :param remember: True to set a long-lived token
         :return: The authenticated User, containing the access token
         :raises HTTPException: If the username or password is incorrect
         """
         try:
             user = self.get_user(username)
             user.verify(password)
-            if remember:
-                expires_delta = timedelta(days=config.TOKEN_REMEMBER_ME_DAYS)
-            else:
-                expires_delta = timedelta(minutes=config.TOKEN_EXPIRE_MINUTES)
-            user.access_token = create_access_token(user.model_dump(), expires_delta=expires_delta)
-            self.token_dao.create_with(access_token=user.access_token, owner=user.username)
-            return user
+            token = self.token_dao.create_with(access_token=uuid.uuid4().hex, owner=user.username)
+            return user, token.access_token
         except (NotFound, InvalidPassword) as e:
             raise Unauthorized('Authentication failed due to incorrect username or password') from e
 
@@ -103,12 +68,10 @@ class UserService:
         if not token:
             raise Unauthorized('No token provided')
         try:
-            payload = decode_token(token)
-            username = payload['username']
-            self.token_dao.get(token)
-            return self.get_user(username)
-        except Exception as e:
-            raise Unauthorized(f'Authentication failed: {str(e)}') from e
+            entry = self.token_dao.get(token)
+            return self.get_user(entry.owner)
+        except NotFound as e:
+            raise Unauthorized('Invalid token') from e
 
     def invalidate_token(self, token: str) -> None:
         """Deauthenticates a session by invalidating its token."""

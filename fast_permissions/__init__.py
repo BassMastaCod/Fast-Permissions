@@ -1,4 +1,5 @@
-from typing import Callable
+import os
+from typing import Callable, Optional
 
 from daomodel.db import DAOFactory
 
@@ -49,19 +50,16 @@ def default_session_endpoints(router: APIRouter, controller: Controller):
                     daos: DAOFactory = controller.daos) -> None:
         """Authenticates the user and sets a cookie with the access token."""
         try:
-            user = UserService(daos).authenticate(username, password, remember_me)
+            user, access_token = UserService(daos).authenticate(username, password)
             response.set_cookie(
                 key='access_token',
-                value=user.access_token,
+                value=access_token,
                 httponly=True,
                 secure=request.url.scheme == 'https',
                 samesite='lax',
-                max_age=60 * 60 * 24 * config.TOKEN_REMEMBER_ME_DAYS,
+                max_age=60 * 60 * 24 * config.TOKEN_REMEMBER_ME_DAYS if remember_me else None,
                 path='/'
             )
-        except TypeError:
-            if config.SECRET_KEY is None:
-                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail='Fast-Permissions SECRET_KEY is not configured')
         except Unauthorized:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Incorrect username or password')
 
@@ -144,7 +142,7 @@ class RestrictedController(Controller):
         async def unauthorized_handler(request: Request, exc: Unauthorized):
             return Response(status_code=status.HTTP_401_UNAUTHORIZED)
 
-    def register_admin(self, password: str) -> None:
+    def register_admin(self, password: Optional[str] = os.environ.get('DEFAULT_ADMIN_PASS')) -> None:
         """Creates an admin user having the given password.
 
         This only needs to be called once.
@@ -152,7 +150,7 @@ class RestrictedController(Controller):
 
         :param password: The password for the admin user (this will be hashed and stored in the database).
         """
-        admin = User(username='admin')
-        admin.password = password
         with self.data_layer.dao_context() as daos:
-            daos[User].upsert(admin)
+            admin = daos[User].create('admin', insert=False)
+            admin.password = password
+            daos.insert(admin)

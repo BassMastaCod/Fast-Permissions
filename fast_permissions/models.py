@@ -1,7 +1,7 @@
 from typing import Optional, Any
 
 import bcrypt
-from daomodel.fields import Identifier, Unsearchable, no_case_str
+from daomodel.fields import Identifier, Unsearchable, no_case_str, AutoUpdatingTimestampField, utc_datetime
 from fast_controller import Resource
 from fast_controller.schema import schemas
 
@@ -48,3 +48,4 @@ class OwnedResource(OrphanableResource):
 
 class Session(OwnedResource, table=True):
     access_token: Identifier[str]
+    last_used: utc_datetime = AutoUpdatingTimestampField
