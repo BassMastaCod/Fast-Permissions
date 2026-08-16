@@ -151,6 +151,4 @@ class RestrictedController(Controller):
         :param password: The password for the admin user (this will be hashed and stored in the database).
         """
         with self.data_layer.dao_context() as daos:
-            admin = daos[User].create('admin', insert=False)
-            admin.password = password
-            daos.insert(admin)
+            daos[User].create_with(username='admin', password=password)
